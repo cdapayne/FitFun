@@ -7,11 +7,13 @@
 
 import SpriteKit
 import GameplayKit
+import WatchConnectivity
 
 class GameScene: SKScene {
     
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
+    private var metricLabels: [String: SKLabelNode] = [:]
     
     override func didMove(to view: SKView) {
         
@@ -25,14 +27,19 @@ class GameScene: SKScene {
         // Create shape node to use during mouse interaction
         let w = (self.size.width + self.size.height) * 0.05
         self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
+
         if let spinnyNode = self.spinnyNode {
             spinnyNode.lineWidth = 2.5
-            
+
             spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
             spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
                                               SKAction.fadeOut(withDuration: 0.5),
                                               SKAction.removeFromParent()]))
+        }
+
+        // Listen for metric updates from the watch
+        WatchMetricsManager.shared.metricUpdateHandler = { [weak self] metrics in
+            self?.updateMetrics(metrics)
         }
     }
     
@@ -80,9 +87,32 @@ class GameScene: SKScene {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         for t in touches { self.touchUp(atPoint: t.location(in: self)) }
     }
-    
-    
+
+
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+    }
+
+    // MARK: - Metrics
+
+    private func updateMetrics(_ metrics: [String: String]) {
+        var index = 0
+        let startY = self.size.height / 2 - 40
+        for (name, value) in metrics.sorted(by: { $0.key < $1.key }) {
+            let label: SKLabelNode
+            if let existing = metricLabels[name] {
+                label = existing
+            } else {
+                label = SKLabelNode(fontNamed: "Helvetica")
+                label.fontSize = 20
+                label.horizontalAlignmentMode = .left
+                label.position = CGPoint(x: -self.size.width / 2 + 20, y: startY - CGFloat(index * 30))
+                addChild(label)
+                metricLabels[name] = label
+            }
+            label.text = "\(name): \(value)"
+            label.position.y = startY - CGFloat(index * 30)
+            index += 1
+        }
     }
 }
