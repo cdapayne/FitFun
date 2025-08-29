@@ -8,11 +8,15 @@
 import UIKit
 import SpriteKit
 import GameplayKit
+import WatchConnectivity
 
 class GameViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Activate the watch connectivity session as soon as the view loads
+        _ = WatchMetricsManager.shared
         
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
